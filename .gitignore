@@ -1,0 +1,9 @@
+node_modules/
+lib/
+coverage/
+*.log
+.env
+# 本地 npm 配置：可能内含 _authToken（发布凭据），绝不入库
+.npmrc
+.DS_Store
+.pnpm-store/

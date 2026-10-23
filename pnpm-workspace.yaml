@@ -1,0 +1,49 @@
+packages:
+  - '.'
+
+# Align the development tree with what users actually resolve.
+#
+# `volatile()` (the marker DSH 0.1.7's settings write gate requires) first
+# appeared in schemastery 3.18.3, and the 0.1.7 line ships ~3.18.4 — but this
+# repo's devDependency pinned 3.18.2, where `asVolatile()` degrades to an
+# identity no-op. That meant the volatile-ACTIVE path, the one every 0.1.7 user
+# hits, was never exercised locally: a defect there could pass both review and
+# CI. The override makes the dev tree match the user's, and the two arms are
+# kept covered deterministically by the exported `asVolatile` (see
+# `tests/dsh-017-compat.spec.ts`) rather than by whatever version happens to be
+# installed.
+#
+# 3.18.5 for the DSH 0.2.1-rc.1 host: `dsh-llm-pi-ai@0.2.1-rc.1` declares
+# `~3.18.5`, so the host runtime now resolves 3.18.5. Keeping the override at
+# 3.18.4 would typecheck and test against a schemastery the host no longer
+# loads — the same "dev tree diverges from the user's" trap this block exists
+# to close. The 0.1.7 line still resolves ~3.18.4, which stays inside the
+# declared peer range `>=3.18.4 <4.0.0`.
+overrides:
+  '@deepseek-ai/schemastery': 3.18.5
+
+allowBuilds:
+  '@google/genai': false
+  protobufjs: false
+
+# Disable pnpm 11's supply-chain release-age gate for this repo.
+#
+# WHY: pnpm 11 refuses to install a version published within `minimumReleaseAge`,
+# and CI runs with no `~/.npmrc`, so it gets pnpm's own default (a non-zero age
+# window). This plugin tracks DSH's lockstep `0.2.0-rc.1` prerelease line, which
+# was published 2026-09-28T12:14–12:19Z — far inside that window. `pnpm install
+# --frozen-lockfile` then aborts with "The lockfile contains entries that the
+# active policies reject" and EVERY later CI step is skipped, on both runners.
+#
+# That failure is invisible locally: a developer's `~/.npmrc` leaves the setting
+# at 0, so the same lockfile installs fine. It only appears on a clean machine,
+# which is exactly what CI is — the install step failed on a docs-only commit,
+# proving it was never about the code in the diff.
+#
+# Why 0 rather than raising the CI window: this repo's lockfile pins exact,
+# already-reviewed versions with recorded integrity hashes. The age gate guards
+# against *resolving* a freshly published version during a non-frozen install;
+# with `--frozen-lockfile` there is nothing left to resolve, so the gate adds no
+# protection here while breaking every build. Dependabot-style freshness is not
+# this repo's policy — upgrades are deliberate, versioned releases.
+minimumReleaseAge: 0
